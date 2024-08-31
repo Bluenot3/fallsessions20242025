@@ -1,0 +1,568 @@
+<html><head><base href="https://interactive.periodic.table">
+<title>Advanced 3D Interactive Periodic Table and Chemical Reaction Simulator</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    :root {
+        --primary-color: #0056b3;
+        --secondary-color: #f0f8ff;
+        --text-color: #333;
+        --border-radius: 8px;
+        --transition-speed: 0.3s;
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body, html {
+        font-family: 'Roboto', Arial, sans-serif;
+        background-color: var(--secondary-color);
+        color: var(--text-color);
+        line-height: 1.6;
+        overflow-x: hidden;
+        height: 100%;
+    }
+
+    .container {
+        max-width: 2000px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    h1, h2 {
+        text-align: center;
+        color: var(--primary-color);
+        margin-bottom: 30px;
+    }
+
+    h1 {
+        font-size: 2.5em;
+    }
+
+    h2 {
+        font-size: 2em;
+    }
+
+    .periodic-table {
+        display: grid;
+        grid-template-columns: repeat(18, 1fr);
+        gap: 2px;
+        background-color: #fff;
+        padding: 10px;
+        border-radius: var(--border-radius);
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+
+    .element {
+        aspect-ratio: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        border-radius: var(--border-radius);
+        transition: all var(--transition-speed) ease;
+        cursor: move;
+        padding: 2px;
+        font-size: 0.6vw;
+        position: relative;
+        user-select: none;
+    }
+
+    .element:hover {
+        transform: scale(1.1);
+        z-index: 1;
+        box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    }
+
+    .symbol {
+        font-size: 1.2em;
+        font-weight: bold;
+    }
+
+    .number {
+        font-size: 0.7em;
+        position: absolute;
+        top: 1px;
+        left: 1px;
+    }
+
+    .name {
+        font-size: 0.5em;
+        text-align: center;
+        margin-top: 1px;
+    }
+
+    .lanthanides, .actinides {
+        grid-column: 3 / -1;
+        display: grid;
+        grid-template-columns: repeat(15, 1fr);
+        gap: 2px;
+        margin-top: 5px;
+    }
+
+    .lanthanides::before, .actinides::before {
+        content: attr(data-label);
+        grid-column: 1 / span 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        background-color: #f0f0f0;
+        border-radius: var(--border-radius);
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        transform: rotate(180deg);
+        padding: 2px;
+        font-size: 0.8em;
+    }
+
+    .legend {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 20px;
+        background-color: #fff;
+        padding: 10px;
+        border-radius: var(--border-radius);
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin: 5px 10px;
+        font-size: 0.8em;
+    }
+
+    .legend-color {
+        width: 15px;
+        height: 15px;
+        margin-right: 5px;
+        border-radius: 3px;
+    }
+
+    #simulationContainer {
+        width: 100%;
+        height: 600px;
+        background-color: #000;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        position: relative;
+    }
+
+    .controls {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 20px;
+    }
+
+    .test-tube {
+        width: 45%;
+        min-height: 100px;
+        border: 2px solid var(--primary-color);
+        border-radius: 0 0 20px 20px;
+        padding: 10px;
+        background-color: rgba(255, 255, 255, 0.8);
+        display: flex;
+        flex-wrap: wrap;
+        align-content: flex-start;
+    }
+
+    .reaction-button {
+        padding: 10px 20px;
+        font-size: 1.2em;
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: var(--border-radius);
+        cursor: pointer;
+        transition: background-color var(--transition-speed);
+    }
+
+    .reaction-button:hover {
+        background-color: #003d82;
+    }
+
+    @media (max-width: 1200px) {
+        .element {
+            font-size: 1vw;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .element {
+            font-size: 1.5vw;
+        }
+        .controls {
+            flex-direction: column;
+        }
+        .test-tube {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+    }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <h1>Advanced 3D Interactive Periodic Table and Chemical Reaction Simulator</h1>
+    <div class="periodic-table" id="periodicTable"></div>
+    <div class="legend" id="legend"></div>
+
+    <h2>3D Chemical Reaction Simulator</h2>
+    <div class="controls">
+        <div class="test-tube" id="testTube1" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <h3>Test Tube 1</h3>
+        </div>
+        <button class="reaction-button" onclick="startSimulation()">Start Reaction</button>
+        <div class="test-tube" id="testTube2" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <h3>Test Tube 2</h3>
+        </div>
+    </div>
+    <div id="simulationContainer"></div>
+</div>
+
+<script>
+const elements = [
+    {symbol: 'H', name: 'Hydrogen', number: 1, category: 'Non-metal', group: 1, period: 1},
+    {symbol: 'He', name: 'Helium', number: 2, category: 'Noble gas', group: 18, period: 1},
+    {symbol: 'Li', name: 'Lithium', number: 3, category: 'Alkali metal', group: 1, period: 2},
+    {symbol: 'Be', name: 'Beryllium', number: 4, category: 'Alkaline earth metal', group: 2, period: 2},
+    {symbol: 'B', name: 'Boron', number: 5, category: 'Metalloid', group: 13, period: 2},
+    {symbol: 'C', name: 'Carbon', number: 6, category: 'Non-metal', group: 14, period: 2},
+    {symbol: 'N', name: 'Nitrogen', number: 7, category: 'Non-metal', group: 15, period: 2},
+    {symbol: 'O', name: 'Oxygen', number: 8, category: 'Non-metal', group: 16, period: 2},
+    {symbol: 'F', name: 'Fluorine', number: 9, category: 'Halogen', group: 17, period: 2},
+    {symbol: 'Ne', name: 'Neon', number: 10, category: 'Noble gas', group: 18, period: 2},
+    {symbol: 'Na', name: 'Sodium', number: 11, category: 'Alkali metal', group: 1, period: 3},
+    {symbol: 'Mg', name: 'Magnesium', number: 12, category: 'Alkaline earth metal', group: 2, period: 3},
+    {symbol: 'Al', name: 'Aluminum', number: 13, category: 'Post-transition metal', group: 13, period: 3},
+    {symbol: 'Si', name: 'Silicon', number: 14, category: 'Metalloid', group: 14, period: 3},
+    {symbol: 'P', name: 'Phosphorus', number: 15, category: 'Non-metal', group: 15, period: 3},
+    {symbol: 'S', name: 'Sulfur', number: 16, category: 'Non-metal', group: 16, period: 3},
+    {symbol: 'Cl', name: 'Chlorine', number: 17, category: 'Halogen', group: 17, period: 3},
+    {symbol: 'Ar', name: 'Argon', number: 18, category: 'Noble gas', group: 18, period: 3},
+    {symbol: 'K', name: 'Potassium', number: 19, category: 'Alkali metal', group: 1, period: 4},
+    {symbol: 'Ca', name: 'Calcium', number: 20, category: 'Alkaline earth metal', group: 2, period: 4},
+    {symbol: 'Sc', name: 'Scandium', number: 21, category: 'Transition metal', group: 3, period: 4},
+    {symbol: 'Ti', name: 'Titanium', number: 22, category: 'Transition metal', group: 4, period: 4},
+    {symbol: 'V', name: 'Vanadium', number: 23, category: 'Transition metal', group: 5, period: 4},
+    {symbol: 'Cr', name: 'Chromium', number: 24, category: 'Transition metal', group: 6, period: 4},
+    {symbol: 'Mn', name: 'Manganese', number: 25, category: 'Transition metal', group: 7, period: 4},
+    {symbol: 'Fe', name: 'Iron', number: 26, category: 'Transition metal', group: 8, period: 4},
+    {symbol: 'Co', name: 'Cobalt', number: 27, category: 'Transition metal', group: 9, period: 4},
+    {symbol: 'Ni', name: 'Nickel', number: 28, category: 'Transition metal', group: 10, period: 4},
+    {symbol: 'Cu', name: 'Copper', number: 29, category: 'Transition metal', group: 11, period: 4},
+    {symbol: 'Zn', name: 'Zinc', number: 30, category: 'Transition metal', group: 12, period: 4},
+    {symbol: 'Ga', name: 'Gallium', number: 31, category: 'Post-transition metal', group: 13, period: 4},
+    {symbol: 'Ge', name: 'Germanium', number: 32, category: 'Metalloid', group: 14, period: 4},
+    {symbol: 'As', name: 'Arsenic', number: 33, category: 'Metalloid', group: 15, period: 4},
+    {symbol: 'Se', name: 'Selenium', number: 34, category: 'Non-metal', group: 16, period: 4},
+    {symbol: 'Br', name: 'Bromine', number: 35, category: 'Halogen', group: 17, period: 4},
+    {symbol: 'Kr', name: 'Krypton', number: 36, category: 'Noble gas', group: 18, period: 4},
+    {symbol: 'Rb', name: 'Rubidium', number: 37, category: 'Alkali metal', group: 1, period: 5},
+    {symbol: 'Sr', name: 'Strontium', number: 38, category: 'Alkaline earth metal', group: 2, period: 5},
+    {symbol: 'Y', name: 'Yttrium', number: 39, category: 'Transition metal', group: 3, period: 5},
+    {symbol: 'Zr', name: 'Zirconium', number: 40, category: 'Transition metal', group: 4, period: 5},
+    {symbol: 'Nb', name: 'Niobium', number: 41, category: 'Transition metal', group: 5, period: 5},
+    {symbol: 'Mo', name: 'Molybdenum', number: 42, category: 'Transition metal', group: 6, period: 5},
+    {symbol: 'Tc', name: 'Technetium', number: 43, category: 'Transition metal', group: 7, period: 5},
+    {symbol: 'Ru', name: 'Ruthenium', number: 44, category: 'Transition metal', group: 8, period: 5},
+    {symbol: 'Rh', name: 'Rhodium', number: 45, category: 'Transition metal', group: 9, period: 5},
+    {symbol: 'Pd', name: 'Palladium', number: 46, category: 'Transition metal', group: 10, period: 5},
+    {symbol: 'Ag', name: 'Silver', number: 47, category: 'Transition metal', group: 11, period: 5},
+    {symbol: 'Cd', name: 'Cadmium', number: 48, category: 'Transition metal', group: 12, period: 5},
+    {symbol: 'In', name: 'Indium', number: 49, category: 'Post-transition metal', group: 13, period: 5},
+    {symbol: 'Sn', name: 'Tin', number: 50, category: 'Post-transition metal', group: 14, period: 5},
+    {symbol: 'Sb', name: 'Antimony', number: 51, category: 'Metalloid', group: 15, period: 5},
+    {symbol: 'Te', name: 'Tellurium', number: 52, category: 'Metalloid', group: 16, period: 5},
+    {symbol: 'I', name: 'Iodine', number: 53, category: 'Halogen', group: 17, period: 5},
+    {symbol: 'Xe', name: 'Xenon', number: 54, category: 'Noble gas', group: 18, period: 5},
+    {symbol: 'Cs', name: 'Cesium', number: 55, category: 'Alkali metal', group: 1, period: 6},
+    {symbol: 'Ba', name: 'Barium', number: 56, category: 'Alkaline earth metal', group: 2, period: 6},
+    {symbol: 'La', name: 'Lanthanum', number: 57, category: 'Lanthanide', group: 3, period: 6},
+    {symbol: 'Ce', name: 'Cerium', number: 58, category: 'Lanthanide', group: 3, period: 6},
+    {symbol: 'Pr', name: 'Praseodymium', number: 59, category: 'Lanthanide', group: 3, period: 6},
+    {symbol: 'Nd', name: 'Neodymium', number: 60, category: 'Lanthanide', group: 3, period: 6},
+    {symbol: 'Pm', name: 'Promethium', number: 61, category: 'Lanthanide', group: 3, period: 6},
+    {symbol: 'Sm', name: 'Samarium', number: 62, category: 'Lanthanide', group: 3, period: 6},
+    {symbol: 'Eu', name: 'Europium', number: 63, category: 'Lanthanide', group: 3, period: 6},
+    {symbol: 'Gd', name: 'Gadolinium', number: 64, category: 'Lanthanide', group: 3, period: 6},
+    {symbol: 'Tb', name: 'Terbium', number: 65, category: 'Lanthanide', group: 3, period: 6},
+    {symbol: 'Dy', name: 'Dysprosium', number: 66, category: 'Lanthanide', group: 3, period: 6},
+    {symbol: 'Ho', name: 'Holmium', number: 67, category: 'Lanthanide', group: 3, period: 6},
+    {symbol: 'Er', name: 'Erbium', number: 68, category: 'Lanthanide', group: 3, period: 6},
+    {symbol: 'Tm', name: 'Thulium', number: 69, category: 'Lanthanide', group: 3, period: 6},
+    {symbol: 'Yb', name: 'Ytterbium', number: 70, category: 'Lanthanide', group: 3, period: 6},
+    {symbol: 'Lu', name: 'Lutetium', number: 71, category: 'Lanthanide', group: 3, period: 6},
+    {symbol: 'Hf', name: 'Hafnium', number: 72, category: 'Transition metal', group: 4, period: 6},
+    {symbol: 'Ta', name: 'Tantalum', number: 73, category: 'Transition metal', group: 5, period: 6},
+    {symbol: 'W', name: 'Tungsten', number: 74, category: 'Transition metal', group: 6, period: 6},
+    {symbol: 'Re', name: 'Rhenium', number: 75, category: 'Transition metal', group: 7, period: 6},
+    {symbol: 'Os', name: 'Osmium', number: 76, category: 'Transition metal', group: 8, period: 6},
+    {symbol: 'Ir', name: 'Iridium', number: 77, category: 'Transition metal', group: 9, period: 6},
+    {symbol: 'Pt', name: 'Platinum', number: 78, category: 'Transition metal', group: 10, period: 6},
+    {symbol: 'Au', name: 'Gold', number: 79, category: 'Transition metal', group: 11, period: 6},
+    {symbol: 'Hg', name: 'Mercury', number: 80, category: 'Transition metal', group: 12, period: 6},
+    {symbol: 'Tl', name: 'Thallium', number: 81, category: 'Post-transition metal', group: 13, period: 6},
+    {symbol: 'Pb', name: 'Lead', number: 82, category: 'Post-transition metal', group: 14, period: 6},
+    {symbol: 'Bi', name: 'Bismuth', number: 83, category: 'Post-transition metal', group: 15, period: 6},
+    {symbol: 'Po', name: 'Polonium', number: 84, category: 'Post-transition metal', group: 16, period: 6},
+    {symbol: 'At', name: 'Astatine', number: 85, category: 'Halogen', group: 17, period: 6},
+    {symbol: 'Rn', name: 'Radon', number: 86, category: 'Noble gas', group: 18, period: 6},
+    {symbol: 'Fr', name: 'Francium', number: 87, category: 'Alkali metal', group: 1, period: 7},
+    {symbol: 'Ra', name: 'Radium', number: 88, category: 'Alkaline earth metal', group: 2, period: 7},
+    {symbol: 'Ac', name: 'Actinium', number: 89, category: 'Actinide', group: 3, period: 7},
+    {symbol: 'Th', name: 'Thorium', number: 90, category: 'Actinide', group: 3, period: 7},
+    {symbol: 'Pa', name: 'Protactinium', number: 91, category: 'Actinide', group: 3, period: 7},
+    {symbol: 'U', name: 'Uranium', number: 92, category: 'Actinide', group: 3, period: 7},
+    {symbol: 'Np', name: 'Neptunium', number: 93, category: 'Actinide', group: 3, period: 7},
+    {symbol: 'Pu', name: 'Plutonium', number: 94, category: 'Actinide', group: 3, period: 7},
+    {symbol: 'Am', name: 'Americium', number: 95, category: 'Actinide', group: 3, period: 7},
+    {symbol: 'Cm', name: 'Curium', number: 96, category: 'Actinide', group: 3, period: 7},
+    {symbol: 'Bk', name: 'Berkelium', number: 97, category: 'Actinide', group: 3, period: 7},
+    {symbol: 'Cf', name: 'Californium', number: 98, category: 'Actinide', group: 3, period: 7},
+    {symbol: 'Es', name: 'Einsteinium', number: 99, category: 'Actinide', group: 3, period: 7},
+    {symbol: 'Fm', name: 'Fermium', number: 100, category: 'Actinide', group: 3, period: 7},
+    {symbol: 'Md', name: 'Mendelevium', number: 101, category: 'Actinide', group: 3, period: 7},
+    {symbol: 'No', name: 'Nobelium', number: 102, category: 'Actinide', group: 3, period: 7},
+    {symbol: 'Lr', name: 'Lawrencium', number: 103, category: 'Actinide', group: 3, period: 7},
+    {symbol: 'Rf', name: 'Rutherfordium', number: 104, category: 'Transition metal', group: 4, period: 7},
+    {symbol: 'Db', name: 'Dubnium', number: 105, category: 'Transition metal', group: 5, period: 7},
+    {symbol: 'Sg', name: 'Seaborgium', number: 106, category: 'Transition metal', group: 6, period: 7},
+    {symbol: 'Bh', name: 'Bohrium', number: 107, category: 'Transition metal', group: 7, period: 7},
+    {symbol: 'Hs', name: 'Hassium', number: 108, category: 'Transition metal', group: 8, period: 7},
+    {symbol: 'Mt', name: 'Meitnerium', number: 109, category: 'Unknown', group: 9, period: 7},
+    {symbol: 'Ds', name: 'Darmstadtium', number: 110, category: 'Unknown', group: 10, period: 7},
+    {symbol: 'Rg', name: 'Roentgenium', number: 111, category: 'Unknown', group: 11, period: 7},
+    {symbol: 'Cn', name: 'Copernicium', number: 112, category: 'Transition metal', group: 12, period: 7},
+    {symbol: 'Nh', name: 'Nihonium', number: 113, category: 'Unknown', group: 13, period: 7},
+    {symbol: 'Fl', name: 'Flerovium', number: 114, category: 'Post-transition metal', group: 14, period: 7},
+    {symbol: 'Mc', name: 'Moscovium', number: 115, category: 'Unknown', group: 15, period: 7},
+    {symbol: 'Lv', name: 'Livermorium', number: 116, category: 'Unknown', group: 16, period: 7},
+    {symbol: 'Ts', name: 'Tennessine', number: 117, category: 'Unknown', group: 17, period: 7},
+    {symbol: 'Og', name: 'Oganesson', number: 118, category: 'Unknown', group: 18, period: 7}
+];
+
+const categories = [
+    {name: 'Non-metal', color: '#A1D344'},
+    {name: 'Noble gas', color: '#40E0D0'},
+    {name: 'Alkali metal', color: '#FF6666'},
+    {name: 'Alkaline earth metal', color: '#FFDAB9'},
+    {name: 'Metalloid', color: '#CCB974'},
+    {name: 'Halogen', color: '#FFFF99'},
+    {name: 'Transition metal', color: '#FFC0CB'},
+    {name: 'Post-transition metal', color: '#BFC0C0'},
+    {name: 'Lanthanide', color: '#FFBFFF'},
+    {name: 'Actinide', color: '#F660AB'},
+    {name: 'Unknown', color: '#E8E8E8'}
+];
+
+function createPeriodicTable() {
+    const table = document.getElementById('periodicTable');
+    table.innerHTML = '';
+    elements.forEach(element => {
+        const el = document.createElement('div');
+        el.className = 'element';
+        el.draggable = true;
+        el.id = `element-${element.symbol}`;
+        el.style.backgroundColor = categories.find(cat => cat.name === element.category)?.color || '#FFFFFF';
+        el.innerHTML = `
+            <span class="number">${element.number}</span>
+            <span class="symbol">${element.symbol}</span>
+            <span class="name">${element.name}</span>
+        `;
+        el.style.gridColumn = element.group;
+        el.style.gridRow = element.period;
+        el.addEventListener('dragstart', drag);
+        table.appendChild(el);
+    });
+
+    const lanthanides = document.createElement('div');
+    lanthanides.className = 'lanthanides';
+    lanthanides.setAttribute('data-label', 'Lanthanides');
+    const actinides = document.createElement('div');
+    actinides.className = 'actinides';
+    actinides.setAttribute('data-label', 'Actinides');
+
+    elements.forEach(element => {
+        if (element.category === 'Lanthanide' || element.category === 'Actinide') {
+            const el = document.createElement('div');
+            el.className = 'element';
+            el.draggable = true;
+            el.id = `element-${element.symbol}`;
+            el.style.backgroundColor = categories.find(cat => cat.name === element.category)?.color || '#FFFFFF';
+            el.innerHTML = `
+                <span class="number">${element.number}</span>
+                <span class="symbol">${element.symbol}</span>
+                <span class="name">${element.name}</span>
+            `;
+            el.addEventListener('dragstart', drag);
+            if (element.category === 'Lanthanide') {
+                lanthanides.appendChild(el);
+            } else {
+                actinides.appendChild(el);
+            }
+        }
+    });
+
+    table.appendChild(lanthanides);
+    table.appendChild(actinides);
+}
+
+function createLegend() {
+    const legend = document.getElementById('legend');
+    legend.innerHTML = '';
+    categories.forEach(category => {
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        item.innerHTML = `
+            <div class="legend-color" style="background-color: ${category.color};"></div>
+            <span>${category.name}</span>
+        `;
+        legend.appendChild(item);
+    });
+}
+
+function drag(event) {
+    event.dataTransfer.setData("text", event.target.id);
+}
+
+function allowDrop(event) {
+    event.preventDefault();
+}
+
+function drop(event) {
+    event.preventDefault();
+    const data = event.dataTransfer.getData("text");
+    const draggedElement = document.getElementById(data).cloneNode(true);
+    draggedElement.style.position = 'relative';
+    draggedElement.style.cursor = 'pointer';
+    draggedElement.addEventListener('click', function() {
+        this.remove();
+    });
+    event.target.closest('.test-tube').appendChild(draggedElement);
+}
+
+// Three.js and Cannon.js setup
+let scene, camera, renderer, world;
+let testTube1Mesh, testTube2Mesh;
+const particles = [];
+
+function initThreeJS() {
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.getElementById('simulationContainer').appendChild(renderer.domElement);
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0x404040);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    directionalLight.position.set(1, 1, 1);
+    scene.add(directionalLight);
+
+    // Test tubes
+    const testTubeGeometry = new THREE.CylinderGeometry(0.5, 0.5, 3, 32);
+    const testTubeMaterial = new THREE.MeshPhongMaterial({ color: 0xcccccc, transparent: true, opacity: 0.5 });
+    testTube1Mesh = new THREE.Mesh(testTubeGeometry, testTubeMaterial);
+    testTube1Mesh.position.set(-2, 0, 0);
+    scene.add(testTube1Mesh);
+
+    testTube2Mesh = new THREE.Mesh(testTubeGeometry, testTubeMaterial);
+    testTube2Mesh.position.set(2, 0, 0);
+    scene.add(testTube2Mesh);
+
+    camera.position.z = 10;
+
+    // Initialize Cannon.js
+    world = new CANNON.World();
+    world.gravity.set(0, -9.82, 0);
+}
+
+function createParticle(element, position) {
+    const geometry = new THREE.SphereGeometry(0.1, 32, 32);
+    const material = new THREE.MeshPhongMaterial({ color: categories.find(cat => cat.name === element.category)?.color || 0xFFFFFF });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.copy(position);
+    scene.add(mesh);
+
+    const shape = new CANNON.Sphere(0.1);
+    const body = new CANNON.Body({
+        mass: 1,
+        shape: shape,
+        position: new CANNON.Vec3(position.x, position.y, position.z)
+    });
+    world.addBody(body);
+
+    return { mesh, body };
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    world.step(1 / 60);
+    particles.forEach(particle => {
+        particle.mesh.position.copy(particle.body.position);
+        particle.mesh.quaternion.copy(particle.body.quaternion);
+    });
+    renderer.render(scene, camera);
+}
+
+function startSimulation() {
+    // Clear previous particles
+    particles.forEach(particle => {
+        scene.remove(particle.mesh);
+        world.removeBody(particle.body);
+    });
+    particles.length = 0;
+
+    // Get elements from test tubes
+    const testTube1Elements = Array.from(document.getElementById('testTube1').children).filter(el => el.classList.contains('element'));
+    const testTube2Elements = Array.from(document.getElementById('testTube2').children).filter(el => el.classList.contains('element'));
+
+    // Create particles for each element
+    testTube1Elements.forEach((el, index) => {
+        const element = elements.find(e => e.symbol === el.querySelector('.symbol').textContent);
+        const particle = createParticle(element, new THREE.Vector3(-2, 1 - index * 0.3, 0));
+        particles.push(particle);
+    });
+
+    testTube2Elements.forEach((el, index) => {
+        const element = elements.find(e => e.symbol === el.querySelector('.symbol').textContent);
+        const particle = createParticle(element, new THREE.Vector3(2, 1 - index * 0.3, 0));
+        particles.push(particle);
+    });
+
+    // Simulate chemical reaction (for demonstration, just make particles move randomly)
+    particles.forEach(particle => {
+        const force = new CANNON.Vec3(
+            (Math.random() - 0.5) * 10,
+            (Math.random() - 0.5) * 10,
+            (Math.random() - 0.5) * 10
+        );
+        particle.body.applyForce(force);
+    });
+}
+
+// Initialize everything
+createPeriodicTable();
+createLegend();
+initThreeJS();
+animate();
+
+// Handle window resize
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
