@@ -1,0 +1,318 @@
+<html><head><base href="https://api-obstacle-course.com/">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZEN API Obstacle Course</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f0f0f0;
+    }
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+        color: #333;
+    }
+    .task {
+        margin-bottom: 20px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    .task h3 {
+        margin-top: 0;
+    }
+    button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-right: 10px;
+    }
+    button:hover {
+        background-color: #45a049;
+    }
+    #results, #analysis {
+        margin-top: 20px;
+    }
+    .model-input {
+        margin-bottom: 10px;
+    }
+    .model-input input {
+        margin-right: 10px;
+    }
+    .progress-bar {
+        width: 100%;
+        background-color: #ddd;
+        border-radius: 5px;
+        margin-top: 10px;
+    }
+    .progress {
+        width: 0;
+        height: 20px;
+        background-color: #4CAF50;
+        border-radius: 5px;
+        transition: width 0.5s ease-in-out;
+    }
+    .task-result {
+        margin-top: 10px;
+        font-style: italic;
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1>ZEN API Obstacle Course</h1>
+        <div id="model-inputs">
+            <div class="model-input">
+                <input type="text" placeholder="Model Name" class="model-name">
+                <input type="password" placeholder="API Key" class="api-key">
+            </div>
+        </div>
+        <button onclick="addModelInput()">Add Another Model</button>
+        <button onclick="startObstacleCourse()">Start Obstacle Course</button>
+
+        <div id="tasks">
+            <div class="task">
+                <h3>Task 1: Text Completion</h3>
+                <p>Complete the following sentence: "The quick brown fox..."</p>
+                <div class="progress-bar"><div class="progress"></div></div>
+                <div class="task-result"></div>
+            </div>
+            <div class="task">
+                <h3>Task 2: Image Generation</h3>
+                <p>Generate an image of a futuristic cityscape.</p>
+                <div class="progress-bar"><div class="progress"></div></div>
+                <div class="task-result"></div>
+            </div>
+            <div class="task">
+                <h3>Task 3: Mathematical Function</h3>
+                <p>Calculate the derivative of f(x) = x^3 + 2x^2 - 5x + 3</p>
+                <div class="progress-bar"><div class="progress"></div></div>
+                <div class="task-result"></div>
+            </div>
+            <div class="task">
+                <h3>Task 4: Code Completion</h3>
+                <p>Complete the following Python function:</p>
+                <pre>
+def fibonacci(n):
+    if n <= 1:
+        return n
+    else:
+        # Complete the function
+                </pre>
+                <div class="progress-bar"><div class="progress"></div></div>
+                <div class="task-result"></div>
+            </div>
+            <div class="task">
+                <h3>Task 5: Paragraph Generation</h3>
+                <p>Generate a paragraph about the importance of renewable energy.</p>
+                <div class="progress-bar"><div class="progress"></div></div>
+                <div class="task-result"></div>
+            </div>
+            <div class="task">
+                <h3>Task 6: Sentiment Analysis</h3>
+                <p>Analyze the sentiment of the following text: "I absolutely love this product! It's amazing!"</p>
+                <div class="progress-bar"><div class="progress"></div></div>
+                <div class="task-result"></div>
+            </div>
+            <div class="task">
+                <h3>Task 7: Language Translation</h3>
+                <p>Translate the following English text to French: "Hello, how are you today?"</p>
+                <div class="progress-bar"><div class="progress"></div></div>
+                <div class="task-result"></div>
+            </div>
+            <div class="task">
+                <h3>Task 8: Named Entity Recognition</h3>
+                <p>Identify named entities in the following text: "Apple Inc. is headquartered in Cupertino, California."</p>
+                <div class="progress-bar"><div class="progress"></div></div>
+                <div class="task-result"></div>
+            </div>
+            <div class="task">
+                <h3>Task 9: Text Summarization</h3>
+                <p>Summarize the following paragraph in one sentence:</p>
+                <p>"Artificial intelligence has made significant strides in recent years, transforming various industries and aspects of daily life. From voice assistants to autonomous vehicles, AI technologies are becoming increasingly prevalent and sophisticated. As these advancements continue, it is crucial to consider the ethical implications and potential societal impacts of widespread AI adoption."</p>
+                <div class="progress-bar"><div class="progress"></div></div>
+                <div class="task-result"></div>
+            </div>
+            <div class="task">
+                <h3>Task 10: Question Answering</h3>
+                <p>Answer the following question based on the given context:</p>
+                <p>Context: "The Eiffel Tower, located in Paris, France, was completed in 1889. It stands at a height of 324 meters and was the tallest man-made structure in the world for 41 years until the Chrysler Building in New York City was completed in 1930."</p>
+                <p>Question: "How tall is the Eiffel Tower?"</p>
+                <div class="progress-bar"><div class="progress"></div></div>
+                <div class="task-result"></div>
+            </div>
+        </div>
+
+        <div id="results"></div>
+        <div id="analysis"></div>
+
+        <button onclick="analyzeResults()" style="display: none;" id="analyzeButton">Analyze Results</button>
+        <button onclick="exportResults()" style="display: none;" id="exportButton">Export Results</button>
+        <button onclick="shareResults()" style="display: none;" id="shareButton">Share Results</button>
+    </div>
+
+    <script>
+        let models = [];
+        let currentModel = 0;
+        let currentTask = 0;
+
+        function addModelInput() {
+            const modelInputs = document.getElementById('model-inputs');
+            const newInput = document.createElement('div');
+            newInput.className = 'model-input';
+            newInput.innerHTML = `
+                <input type="text" placeholder="Model Name" class="model-name">
+                <input type="password" placeholder="API Key" class="api-key">
+            `;
+            modelInputs.appendChild(newInput);
+        }
+
+        function startObstacleCourse() {
+            const modelInputs = document.querySelectorAll('.model-input');
+            models = Array.from(modelInputs).map(input => ({
+                name: input.querySelector('.model-name').value,
+                apiKey: input.querySelector('.api-key').value,
+                results: []
+            }));
+
+            currentModel = 0;
+            currentTask = 0;
+            runNextTask();
+        }
+
+        function runNextTask() {
+            if (currentModel >= models.length) {
+                showAnalysisButtons();
+                return;
+            }
+
+            if (currentTask >= 10) {
+                currentModel++;
+                currentTask = 0;
+                runNextTask();
+                return;
+            }
+
+            const taskElement = document.querySelectorAll('.task')[currentTask];
+            const progressBar = taskElement.querySelector('.progress');
+            const resultDiv = taskElement.querySelector('.task-result');
+
+            // Simulate API call
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 10;
+                progressBar.style.width = `${progress}%`;
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    const result = simulateTaskResult(currentTask);
+                    resultDiv.textContent = result;
+                    models[currentModel].results.push({
+                        task: `Task ${currentTask + 1}`,
+                        result: result,
+                        time: Math.random() * 1000 + 500 // Random time between 500-1500ms
+                    });
+                    currentTask++;
+                    setTimeout(runNextTask, 1000);
+                }
+            }, 100);
+        }
+
+        function simulateTaskResult(taskIndex) {
+            const results = [
+                "The quick brown fox jumps over the lazy dog.",
+                "Image URL: https://api.example.com/image/futuristic-cityscape.jpg",
+                "f'(x) = 3x^2 + 4x - 5",
+                "return fibonacci(n-1) + fibonacci(n-2)",
+                "Renewable energy is crucial for a sustainable future...",
+                "Sentiment: Positive (0.95)",
+                "Bonjour, comment allez-vous aujourd'hui?",
+                "[Apple Inc.](ORG), [Cupertino](LOC), [California](LOC)",
+                "AI advancements are transforming industries and daily life, raising ethical and societal considerations.",
+                "The Eiffel Tower is 324 meters tall."
+            ];
+            return results[taskIndex];
+        }
+
+        function showAnalysisButtons() {
+            document.getElementById('analyzeButton').style.display = 'inline-block';
+            document.getElementById('exportButton').style.display = 'inline-block';
+            document.getElementById('shareButton').style.display = 'inline-block';
+        }
+
+        function analyzeResults() {
+            const analysisDiv = document.getElementById('analysis');
+            analysisDiv.innerHTML = '<h2>Analysis</h2>';
+
+            // Calculate average time per task for each model
+            const avgTimes = models.map(model => ({
+                name: model.name,
+                avgTime: model.results.reduce((sum, result) => sum + result.time, 0) / model.results.length
+            }));
+
+            // Create a bar chart for average times
+            const ctx = document.createElement('canvas');
+            analysisDiv.appendChild(ctx);
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: avgTimes.map(model => model.name),
+                    datasets: [{
+                        label: 'Average Time (ms)',
+                        data: avgTimes.map(model => model.avgTime),
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)'
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Add more detailed analysis
+            analysisDiv.innerHTML += '<h3>Detailed Analysis</h3>';
+            models.forEach(model => {
+                analysisDiv.innerHTML += `<h4>${model.name}</h4>`;
+                analysisDiv.innerHTML += `<p>Total Time: ${model.results.reduce((sum, result) => sum + result.time, 0).toFixed(2)}ms</p>`;
+                analysisDiv.innerHTML += `<p>Fastest Task: ${model.results.reduce((min, result) => result.time < min.time ? result : min).task}</p>`;
+                analysisDiv.innerHTML += `<p>Slowest Task: ${model.results.reduce((max, result) => result.time > max.time ? result : max).task}</p>`;
+            });
+        }
+
+        function exportResults() {
+            const resultsString = JSON.stringify(models, null, 2);
+            const blob = new Blob([resultsString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'api_obstacle_course_results.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function shareResults() {
+            // In a real application, you would implement sharing functionality here
+            alert('Sharing functionality would be implemented here. For now, you can export the results and share the file.');
+        }
+    </script>
+</body>
+</html>
